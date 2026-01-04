@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PezzaliAPP — Music Release Cockpit (Offline)</title>
+  <style>
+    :root { --bg:#0b0c10; --panel:#12141b; --panel2:#0f1117; --text:#e7e9ee; --muted:#9aa3b2; --line:#222635; --accent:#6ee7ff; }
+    * { box-sizing:border-box; }
+    body { margin:0; font:14px/1.4 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); }
+    header { padding:14px 16px; border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:center; justify-content:space-between; background:linear-gradient(180deg,#0b0c10,#080910); position:sticky; top:0; z-index:20; }
+    header .brand { display:flex; gap:10px; align-items:center; }
+    .dot { width:10px; height:10px; border-radius:999px; background:var(--accent); box-shadow:0 0 20px rgba(110,231,255,.35); }
+    header h1 { margin:0; font-size:14px; font-weight:600; letter-spacing:.2px; }
+    header .actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+    button, .btn { background:var(--panel); border:1px solid var(--line); color:var(--text); padding:10px 12px; border-radius:10px; cursor:pointer; }
+    button:hover { border-color:#2d3550; }
+    button.primary { background:rgba(110,231,255,.12); border-color:rgba(110,231,255,.35); }
+    button.danger { background:rgba(255,90,90,.10); border-color:rgba(255,90,90,.30); }
+    input, textarea, select { width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--panel2); color:var(--text); outline:none; }
+    textarea { min-height:110px; resize:vertical; }
+    .wrap { display:grid; grid-template-columns: 340px 1fr; min-height:calc(100vh - 58px); }
+    aside { border-right:1px solid var(--line); background:rgba(255,255,255,.02); }
+    main { padding:14px; }
+    .pad { padding:14px; }
+    .muted { color:var(--muted); }
+    .list { display:flex; flex-direction:column; gap:8px; padding:14px; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px; }
+    .track { display:flex; gap:10px; align-items:flex-start; justify-content:space-between; }
+    .track h3 { margin:0; font-size:14px; font-weight:650; }
+    .track .meta { font-size:12px; color:var(--muted); margin-top:4px; }
+    .track .pill { font-size:11px; color:var(--muted); border:1px solid var(--line); padding:4px 8px; border-radius:999px; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+    .tabs { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 12px; }
+    .tab { padding:8px 10px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--muted); cursor:pointer; }
+    .tab.active { color:var(--text); border-color:rgba(110,231,255,.35); background:rgba(110,231,255,.10); }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+    .checks { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    label.chk { display:flex; gap:8px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,.02); cursor:pointer; user-select:none;}
+    label.chk input { width:auto; }
+    .kpi { display:flex; gap:10px; flex-wrap:wrap; }
+    .kpi .box { flex:1; min-width:160px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:10px; }
+    .kpi .n { font-size:20px; font-weight:700; margin-top:6px; }
+    .sep { height:1px; background:var(--line); margin:12px 0; }
+    .small { font-size:12px; }
+    .warn { border:1px solid rgba(255,190,90,.35); background:rgba(255,190,90,.10); color:#ffd9a0; padding:10px 12px; border-radius:14px; }
+    .ok { border:1px solid rgba(120,255,160,.25); background:rgba(120,255,160,.08); color:#bfffd6; padding:10px 12px; border-radius:14px; }
+    .right { text-align:right; }
+    .mono { font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace; }
+    .hide { display:none !important; }
+
+    @media (max-width: 980px){
+      .wrap { grid-template-columns: 1fr; }
+      aside { border-right:0; border-bottom:1px solid var(--line); }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="dot"></div>
+    <div>
+      <h1>Music Release Cockpit — Offline</h1>
+      <div class="muted small">Dati salvati in locale (localStorage). Nessun upload, nessun tracking.</div>
+    </div>
+  </div>
+  <div class="actions">
+    <button id="btnNew" class="primary">+ Nuovo brano</button>
+    <button id="btnExport">Export backup JSON</button>
+    <label class="btn" style="display:inline-flex; align-items:center; gap:8px;">
+      Import JSON <input id="fileImport" type="file" accept="application/json" style="display:none;">
+    </label>
+    <button id="btnReset" class="danger">Reset</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside>
+    <div class="pad">
+      <input id="q" placeholder="Cerca (titolo, tag, mood, BPM)..." />
+      <div class="muted small" style="margin-top:8px;">Suggerimento: tag separati da virgola (es. minimal, berlin, lounge).</div>
+    </div>
+    <div class="list" id="trackList"></div>
+  </aside>
+
+  <main>
+    <div id="emptyState" class="card">
+      <h2 style="margin:0 0 6px;font-size:16px;">Crea o seleziona un brano</h2>
+      <div class="muted">Qui avrai scheda brano, checklist, lyric EN/IT e prompt builder.</div>
+    </div>
+
+    <div id="editor" class="hide">
+      <div class="kpi" id="kpi"></div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="cockpit">Cockpit</button>
+        <button class="tab" data-tab="checklist">Checklist</button>
+        <button class="tab" data-tab="lyrics">Lyrics EN/IT</button>
+        <button class="tab" data-tab="suno">Suno Prompt</button>
+        <button class="tab" data-tab="links">Link & Note</button>
+      </div>
+
+      <!-- COCKPIT -->
+      <section id="tab-cockpit" class="card">
+        <div class="row">
+          <div>
+            <div class="muted small">Titolo</div>
+            <input id="t_title" placeholder="Es. Different Angles" />
+          </div>
+          <div>
+            <div class="muted small">Artista / Progetto</div>
+            <input id="t_artist" placeholder="Es. PezzaliAPP" />
+          </div>
+        </div>
+
+        <div class="row3" style="margin-top:10px;">
+          <div>
+            <div class="muted small">Data uscita</div>
+            <input id="t_release" type="date" />
+          </div>
+          <div>
+            <div class="muted small">BPM</div>
+            <input id="t_bpm" type="number" min="0" step="1" placeholder="92" />
+          </div>
+          <div>
+            <div class="muted small">Tonalità</div>
+            <input id="t_key" placeholder="Es. Am / C# minor" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <div>
+            <div class="muted small">Mood</div>
+            <input id="t_mood" placeholder="Es. minimal / space / warm" />
+          </div>
+          <div>
+            <div class="muted small">Tag</div>
+            <input id="t_tags" placeholder="minimal, lounge, berlin..." />
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="row">
+          <div>
+            <div class="muted small">ISRC (opzionale)</div>
+            <input id="t_isrc" placeholder="Es. IT-XXX-26-00001" class="mono"/>
+          </div>
+          <div>
+            <div class="muted small">Durata target</div>
+            <input id="t_len" placeholder="Es. 2:50" />
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="right">
+          <button id="btnSave" class="primary">Salva</button>
+          <button id="btnDelete" class="danger">Elimina brano</button>
+        </div>
+      </section>
+
+      <!-- CHECKLIST -->
+      <section id="tab-checklist" class="card hide">
+        <div class="muted small">Checklist per arrivare a “PRONTO”. Spunta e l’app calcola lo score.</div>
+        <div class="sep"></div>
+        <div class="checks" id="checkGrid"></div>
+        <div class="sep"></div>
+        <div class="muted small">Suggerimento: puoi usare la checklist come “rituale” di release.</div>
+      </section>
+
+      <!-- LYRICS -->
+      <section id="tab-lyrics" class="card hide">
+        <div class="muted small">Incolla testo inglese e traduzione italiana, una riga per volta (stile che usi spesso).</div>
+        <div class="sep"></div>
+        <div class="grid2">
+          <div>
+            <div class="muted small">Lyrics (EN)</div>
+            <textarea id="ly_en" placeholder="Line 1&#10;Line 2&#10;Line 3"></textarea>
+          </div>
+          <div>
+            <div class="muted small">Traduzione (IT)</div>
+            <textarea id="ly_it" placeholder="Riga 1&#10;Riga 2&#10;Riga 3"></textarea>
+          </div>
+        </div>
+        <div class="sep"></div>
+        <div class="row">
+          <div class="card" style="background:rgba(255,255,255,.02);">
+            <div class="muted small">Anteprima “riga sotto riga”</div>
+            <div id="ly_preview" class="small" style="margin-top:8px; white-space:pre-wrap;"></div>
+          </div>
+          <div class="card" style="background:rgba(255,255,255,.02);">
+            <div class="muted small">Mini-tools</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+              <button id="btnLySync">Allinea righe (pad)</button>
+              <button id="btnLyExport">Scarica .txt EN+IT</button>
+            </div>
+            <div class="muted small" style="margin-top:8px;">
+              “Allinea righe” aggiunge righe vuote alla colonna più corta per mantenere corrispondenza.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SUNO -->
+      <section id="tab-suno" class="card hide">
+        <div class="muted small">Prompt builder a blocchi + controllo coerenza (anti-spreco crediti).</div>
+        <div class="sep"></div>
+
+        <div class="grid3">
+          <div>
+            <div class="muted small">Tempo / Groove</div>
+            <textarea id="p_tempo" placeholder="92 BPM, straight, no swing..."></textarea>
+          </div>
+          <div>
+            <div class="muted small">Drums / Bass</div>
+            <textarea id="p_rhythm" placeholder="Kick secco, snare asciutto, pattern ripetitivo..."></textarea>
+          </div>
+          <div>
+            <div class="muted small">Harmony / Sound</div>
+            <textarea id="p_sound" placeholder="Max 3 accordi, ripetuti, atmosfera space..."></textarea>
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-top:10px;">
+          <div>
+            <div class="muted small">Vocals / Delivery</div>
+            <textarea id="p_vox" placeholder="Voce intima quasi parlata, delay..."></textarea>
+          </div>
+          <div>
+            <div class="muted small">Do / Don't (regole)</div>
+            <textarea id="p_rules" placeholder="NO ballad, NO epic build, NO fill..."></textarea>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="row">
+          <div class="card" style="background:rgba(255,255,255,.02);">
+            <div class="muted small">Prompt finale (copiabile)</div>
+            <textarea id="p_final" class="mono" style="min-height:180px;" readonly></textarea>
+            <div class="muted small" style="margin-top:8px;">
+              Caratteri: <span id="p_count">0</span> / <span id="p_limit">1000</span>
+              <span class="muted">—</span>
+              Limite:
+              <select id="p_limitSel" style="width:auto; display:inline-block; margin-left:6px;">
+                <option value="500">500</option>
+                <option value="1000" selected>1000</option>
+                <option value="1500">1500</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="card" style="background:rgba(255,255,255,.02);">
+            <div class="muted small">Consistency guard</div>
+            <div id="p_guard" style="margin-top:8px;"></div>
+            <div class="sep"></div>
+            <button id="btnCopyPrompt" class="primary">Copia prompt</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- LINKS -->
+      <section id="tab-links" class="card hide">
+        <div class="row">
+          <div>
+            <div class="muted small">Link DistroKid (video o brano)</div>
+            <input id="l_dk" placeholder="https://distrokid.com/..." />
+          </div>
+          <div>
+            <div class="muted small">Link YouTube / VEVO</div>
+            <input id="l_yt" placeholder="https://youtu.be/..." />
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <div>
+            <div class="muted small">Spotify</div>
+            <input id="l_sp" placeholder="https://open.spotify.com/..." />
+          </div>
+          <div>
+            <div class="muted small">Apple Music</div>
+            <input id="l_am" placeholder="https://music.apple.com/..." />
+          </div>
+        </div>
+
+        <div class="sep"></div>
+        <div class="muted small">Note (mix, idee video, piano promo, ecc.)</div>
+        <textarea id="l_notes" placeholder="Es. teaser 9:16 con tastiere + camminata neve..."></textarea>
+
+        <div class="sep"></div>
+        <div class="right">
+          <button id="btnSave2" class="primary">Salva</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // -----------------------
+  // Storage
+  // -----------------------
+  const STORE_KEY = "pezzaliapp_music_cockpit_v1";
+
+  const DEFAULT_CHECKS = [
+    { id:"cover", label:"Cover 3000×3000 pronta" },
+    { id:"teaser916", label:"Teaser 9:16 pronto" },
+    { id:"thumb", label:"Thumbnail YouTube pronta" },
+    { id:"descYT", label:"Descrizione YouTube (IT/EN)" },
+    { id:"captions", label:"Caption IG + hashtags" },
+    { id:"linkedin", label:"Post LinkedIn pronto" },
+    { id:"credits", label:"Credits completi" },
+    { id:"isrc", label:"ISRC / metadati ok" },
+    { id:"upload", label:"Upload / scheduling completato" },
+    { id:"pins", label:"Commento fissato / CTA" },
+    { id:"story", label:"Stories pronte (1–3)" },
+    { id:"backup", label:"Backup JSON fatto" }
+  ];
+
+  function uid(){ return Math.random().toString(16).slice(2) + Date.now().toString(16); }
+
+  function loadDB(){
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return { tracks:[], selected:null };
+    try { return JSON.parse(raw); } catch { return { tracks:[], selected:null }; }
+  }
+  function saveDB(db){ localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
+
+  let db = loadDB();
+
+  // -----------------------
+  // UI helpers
+  // -----------------------
+  const $ = (id)=>document.getElementById(id);
+  const trackList = $("trackList");
+  const q = $("q");
+
+  let currentId = db.selected;
+
+  function getTrack(id){ return db.tracks.find(t=>t.id===id) || null; }
+
+  function computeScore(t){
+    const total = DEFAULT_CHECKS.length;
+    const done = DEFAULT_CHECKS.filter(c => t.checks?.[c.id]).length;
+    return { total, done, score: total ? Math.round(done/total*100) : 0 };
+  }
+
+  function fmtDate(d){
+    if(!d) return "";
+    try { return new Date(d).toLocaleDateString("it-IT"); } catch { return d; }
+  }
+
+  function renderList(){
+    trackList.innerHTML = "";
+    const term = (q.value||"").trim().toLowerCase();
+    const tracks = [...db.tracks].sort((a,b)=> (b.updatedAt||0)-(a.updatedAt||0));
+
+    const filtered = !term ? tracks : tracks.filter(t=>{
+      const hay = [
+        t.title, t.artist, t.mood, t.tags, t.isrc, String(t.bpm||"")
+      ].join(" ").toLowerCase();
+      return hay.includes(term);
+    });
+
+    if(filtered.length===0){
+      trackList.innerHTML = `<div class="pad muted">Nessun brano. Crea “Nuovo brano”.</div>`;
+      return;
+    }
+
+    for(const t of filtered){
+      const {score} = computeScore(t);
+      const el = document.createElement("div");
+      el.className = "card";
+      el.style.cursor="pointer";
+      el.style.borderColor = (t.id===currentId) ? "rgba(110,231,255,.35)" : "var(--line)";
+      el.innerHTML = `
+        <div class="track">
+          <div>
+            <h3>${escapeHtml(t.title||"Senza titolo")}</h3>
+            <div class="meta">
+              ${escapeHtml(t.artist||"")} ${t.releaseDate ? "• " + fmtDate(t.releaseDate) : ""}
+              ${t.bpm ? "• " + escapeHtml(String(t.bpm)) + " BPM" : ""}
+            </div>
+            <div class="meta">${escapeHtml((t.tags||"").slice(0,60))}</div>
+          </div>
+          <div class="pill">${score}%</div>
+        </div>
+      `;
+      el.onclick = ()=>selectTrack(t.id);
+      trackList.appendChild(el);
+    }
+  }
+
+  function renderEditor(){
+    const t = getTrack(currentId);
+    if(!t){
+      $("editor").classList.add("hide");
+      $("emptyState").classList.remove("hide");
+      return;
+    }
+    $("emptyState").classList.add("hide");
+    $("editor").classList.remove("hide");
+
+    // KPIs
+    const {done,total,score} = computeScore(t);
+    $("kpi").innerHTML = `
+      <div class="box">
+        <div class="muted small">Release score</div>
+        <div class="n">${score}%</div>
+      </div>
+      <div class="box">
+        <div class="muted small">Checklist</div>
+        <div class="n">${done}/${total}</div>
+      </div>
+      <div class="box">
+        <div class="muted small">Ultimo aggiornamento</div>
+        <div class="n" style="font-size:14px; font-weight:600; margin-top:10px;">
+          ${t.updatedAt ? new Date(t.updatedAt).toLocaleString("it-IT") : "—"}
+        </div>
+      </div>
+    `;
+
+    // Fields
+    $("t_title").value = t.title||"";
+    $("t_artist").value = t.artist||"";
+    $("t_release").value = t.releaseDate||"";
+    $("t_bpm").value = t.bpm||"";
+    $("t_key").value = t.key||"";
+    $("t_mood").value = t.mood||"";
+    $("t_tags").value = t.tags||"";
+    $("t_isrc").value = t.isrc||"";
+    $("t_len").value = t.len||"";
+
+    // Links
+    $("l_dk").value = t.links?.dk||"";
+    $("l_yt").value = t.links?.yt||"";
+    $("l_sp").value = t.links?.sp||"";
+    $("l_am").value = t.links?.am||"";
+    $("l_notes").value = t.links?.notes||"";
+
+    // Lyrics
+    $("ly_en").value = t.lyrics?.en||"";
+    $("ly_it").value = t.lyrics?.it||"";
+    updateLyricsPreview();
+
+    // Checklist
+    renderChecklist(t);
+
+    // Suno prompt blocks
+    $("p_tempo").value = t.prompt?.tempo||"";
+    $("p_rhythm").value = t.prompt?.rhythm||"";
+    $("p_sound").value = t.prompt?.sound||"";
+    $("p_vox").value = t.prompt?.vox||"";
+    $("p_rules").value = t.prompt?.rules||"";
+    $("p_limitSel").value = String(t.prompt?.limit||1000);
+    buildPromptFinal();
+  }
+
+  function renderChecklist(t){
+    const grid = $("checkGrid");
+    grid.innerHTML = "";
+    for(const c of DEFAULT_CHECKS){
+      const checked = !!t.checks?.[c.id];
+      const lab = document.createElement("label");
+      lab.className = "chk";
+      lab.innerHTML = `<input type="checkbox" ${checked?"checked":""} data-id="${c.id}"> <span>${escapeHtml(c.label)}</span>`;
+      grid.appendChild(lab);
+    }
+    grid.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      cb.onchange = ()=>{
+        const id = cb.getAttribute("data-id");
+        const tr = getTrack(currentId);
+        tr.checks = tr.checks || {};
+        tr.checks[id] = cb.checked;
+        touch(tr);
+        saveDB(db);
+        renderList();
+        renderEditor();
+      };
+    });
+  }
+
+  function selectTrack(id){
+    currentId = id;
+    db.selected = id;
+    saveDB(db);
+    renderList();
+    renderEditor();
+  }
+
+  function touch(t){ t.updatedAt = Date.now(); }
+
+  // -----------------------
+  // Tabs
+  // -----------------------
+  document.querySelectorAll(".tab").forEach(btn=>{
+    btn.onclick = ()=>{
+      document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+      btn.classList.add("active");
+      const name = btn.getAttribute("data-tab");
+      document.querySelectorAll("main section[id^='tab-']").forEach(sec=>sec.classList.add("hide"));
+      $("tab-"+name).classList.remove("hide");
+    };
+  });
+
+  // -----------------------
+  // Actions
+  // -----------------------
+  $("btnNew").onclick = ()=>{
+    const t = {
+      id: uid(),
+      title: "Nuovo brano",
+      artist: "PezzaliAPP",
+      releaseDate: "",
+      bpm: "",
+      key: "",
+      mood: "",
+      tags: "",
+      isrc: "",
+      len: "2:50",
+      checks: {},
+      lyrics: { en:"", it:"" },
+      prompt: { tempo:"", rhythm:"", sound:"", vox:"", rules:"", limit:1000 },
+      links: { dk:"", yt:"", sp:"", am:"", notes:"" },
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    db.tracks.push(t);
+    saveDB(db);
+    selectTrack(t.id);
+  };
+
+  $("btnSave").onclick = saveCurrentFromCockpit;
+  $("btnSave2").onclick = saveCurrentFromLinks;
+
+  function saveCurrentFromCockpit(){
+    const t = getTrack(currentId); if(!t) return;
+    t.title = $("t_title").value.trim();
+    t.artist = $("t_artist").value.trim();
+    t.releaseDate = $("t_release").value;
+    t.bpm = $("t_bpm").value ? Number($("t_bpm").value) : "";
+    t.key = $("t_key").value.trim();
+    t.mood = $("t_mood").value.trim();
+    t.tags = $("t_tags").value.trim();
+    t.isrc = $("t_isrc").value.trim();
+    t.len = $("t_len").value.trim();
+    touch(t);
+    saveDB(db);
+    renderList();
+    renderEditor();
+  }
+
+  function saveCurrentFromLinks(){
+    const t = getTrack(currentId); if(!t) return;
+    t.links = t.links || {};
+    t.links.dk = $("l_dk").value.trim();
+    t.links.yt = $("l_yt").value.trim();
+    t.links.sp = $("l_sp").value.trim();
+    t.links.am = $("l_am").value.trim();
+    t.links.notes = $("l_notes").value;
+    touch(t);
+    saveDB(db);
+    renderList();
+    renderEditor();
+  }
+
+  $("btnDelete").onclick = ()=>{
+    const t = getTrack(currentId); if(!t) return;
+    if(!confirm("Eliminare questo brano?")) return;
+    db.tracks = db.tracks.filter(x=>x.id!==currentId);
+    currentId = db.tracks[0]?.id || null;
+    db.selected = currentId;
+    saveDB(db);
+    renderList();
+    renderEditor();
+  };
+
+  q.oninput = renderList;
+
+  // Export / Import
+  $("btnExport").onclick = ()=>{
+    const blob = new Blob([JSON.stringify(db, null, 2)], {type:"application/json"});
+    downloadBlob(blob, `music-cockpit-backup-${new Date().toISOString().slice(0,10)}.json`);
+    // mark checklist backup if a track selected
+    const t = getTrack(currentId);
+    if(t){
+      t.checks = t.checks || {};
+      t.checks.backup = true;
+      touch(t);
+      saveDB(db);
+      renderList();
+      renderEditor();
+    }
+  };
+
+  $("fileImport").addEventListener("change", async (e)=>{
+    const file = e.target.files?.[0];
+    if(!file) return;
+    try{
+      const text = await file.text();
+      const imported = JSON.parse(text);
+      if(!imported || !Array.isArray(imported.tracks)) throw new Error("Formato non valido");
+      db = imported;
+      saveDB(db);
+      currentId = db.selected || db.tracks[0]?.id || null;
+      renderList();
+      renderEditor();
+      alert("Import completato.");
+    }catch(err){
+      alert("Import fallito: " + err.message);
+    }finally{
+      e.target.value = "";
+    }
+  });
+
+  $("btnReset").onclick = ()=>{
+    if(!confirm("Reset totale? Cancella tutti i brani salvati in locale.")) return;
+    localStorage.removeItem(STORE_KEY);
+    db = { tracks:[], selected:null };
+    currentId = null;
+    renderList();
+    renderEditor();
+  };
+
+  // -----------------------
+  // Lyrics
+  // -----------------------
+  function updateLyricsPreview(){
+    const en = ($("ly_en").value||"").split("\n");
+    const it = ($("ly_it").value||"").split("\n");
+    const max = Math.max(en.length, it.length);
+    const out = [];
+    for(let i=0;i<max;i++){
+      const a = en[i] ?? "";
+      const b = it[i] ?? "";
+      if(a.trim()!=="" || b.trim()!==""){
+        out.push(a);
+        out.push("[" + b + "]");
+        out.push("");
+      }
+    }
+    $("ly_preview").textContent = out.join("\n");
+  }
+
+  $("ly_en").addEventListener("input", ()=>{
+    const t = getTrack(currentId); if(!t) return;
+    t.lyrics = t.lyrics || {};
+    t.lyrics.en = $("ly_en").value;
+    touch(t); saveDB(db);
+    updateLyricsPreview();
+  });
+  $("ly_it").addEventListener("input", ()=>{
+    const t = getTrack(currentId); if(!t) return;
+    t.lyrics = t.lyrics || {};
+    t.lyrics.it = $("ly_it").value;
+    touch(t); saveDB(db);
+    updateLyricsPreview();
+  });
+
+  $("btnLySync").onclick = ()=>{
+    const en = ($("ly_en").value||"").split("\n");
+    const it = ($("ly_it").value||"").split("\n");
+    const max = Math.max(en.length, it.length);
+    while(en.length<max) en.push("");
+    while(it.length<max) it.push("");
+    $("ly_en").value = en.join("\n");
+    $("ly_it").value = it.join("\n");
+    const t = getTrack(currentId); if(!t) return;
+    t.lyrics = { en:$("ly_en").value, it:$("ly_it").value };
+    touch(t); saveDB(db);
+    updateLyricsPreview();
+  };
+
+  $("btnLyExport").onclick = ()=>{
+    const t = getTrack(currentId); if(!t) return;
+    const title = (t.title||"lyrics").replace(/[^\w\-]+/g,"_");
+    const en = $("ly_en").value||"";
+    const it = $("ly_it").value||"";
+    const combined = makeInterleaved(en, it);
+    downloadBlob(new Blob([combined], {type:"text/plain"}), `${title}_EN-IT.txt`);
+  };
+
+  function makeInterleaved(enText, itText){
+    const en = (enText||"").split("\n");
+    const it = (itText||"").split("\n");
+    const max = Math.max(en.length, it.length);
+    const out = [];
+    for(let i=0;i<max;i++){
+      const a = en[i] ?? "";
+      const b = it[i] ?? "";
+      out.push(a);
+      out.push(b ? `[${b}]` : "[]");
+      out.push("");
+    }
+    return out.join("\n");
+  }
+
+  // -----------------------
+  // Suno Prompt Builder
+  // -----------------------
+  function buildPromptFinal(){
+    const t = getTrack(currentId); if(!t) return;
+    const limit = Number($("p_limitSel").value||1000);
+
+    const parts = [
+      block("TEMPO / GROOVE", $("p_tempo").value),
+      block("DRUMS / BASS", $("p_rhythm").value),
+      block("HARMONY / SOUND", $("p_sound").value),
+      block("VOCALS", $("p_vox").value),
+      block("DO / DON'T", $("p_rules").value),
+    ].filter(Boolean);
+
+    const final = parts.join("\n\n").trim();
+    $("p_final").value = final;
+    $("p_count").textContent = String(final.length);
+    $("p_limit").textContent = String(limit);
+
+    // save blocks
+    t.prompt = t.prompt || {};
+    t.prompt.tempo = $("p_tempo").value;
+    t.prompt.rhythm = $("p_rhythm").value;
+    t.prompt.sound = $("p_sound").value;
+    t.prompt.vox = $("p_vox").value;
+    t.prompt.rules = $("p_rules").value;
+    t.prompt.limit = limit;
+    touch(t); saveDB(db);
+
+    // guard
+    const issues = guardPrompt(final);
+    const guard = $("p_guard");
+    guard.innerHTML = "";
+    if(final.length > limit){
+      guard.innerHTML += `<div class="warn">⚠️ Prompt troppo lungo: ${final.length}/${limit}. Taglia frasi ripetute o dettagli secondari.</div>`;
+    }
+    if(issues.length){
+      guard.innerHTML += `<div class="warn" style="margin-top:8px;">${issues.map(x=>"• "+escapeHtml(x)).join("<br>")}</div>`;
+    }
+    if(final.length <= limit && !issues.length){
+      guard.innerHTML = `<div class="ok">✅ Coerente e dentro al limite. Pronto da incollare.</div>`;
+    }
+  }
+
+  function block(title, text){
+    const v = (text||"").trim();
+    if(!v) return "";
+    return `${title}\n${v}`;
+  }
+
+  function guardPrompt(final){
+    const s = final.toLowerCase();
+    const issues = [];
+
+    // Esempi di incoerenze comuni
+    const saysNoBallad = s.includes("no ballad") || s.includes("non una ballad") || s.includes("no slow ballad");
+    const hasSlowIntro = s.includes("very slow intro") || s.includes("intro molto lento") || s.includes("solo piano") || s.includes("organ holding");
+    if(saysNoBallad && hasSlowIntro){
+      issues.push("Hai scritto NO BALLAD ma descrivi un intro molto lento/piano solo. Rendi l’intro subito ritmico o rimuovi la parte “slow intro”.");
+    }
+
+    const saysNoBuild = s.includes("no epic build") || s.includes("nessun crescendo") || s.includes("no build");
+    const mentionsCrescendo = s.includes("crescendo") || s.includes("build") || s.includes("epic");
+    if(saysNoBuild && mentionsCrescendo){
+      issues.push("Hai negato i build/crescendo ma li menzioni altrove. Tieni una sola direzione.");
+    }
+
+    const saysNoFills = s.includes("no fill") || s.includes("no fills") || s.includes("senza fill");
+    const mentionsFills = s.includes("fill") && !s.includes("no fill") && !s.includes("no fills");
+    if(saysNoFills && mentionsFills){
+      issues.push("Hai scritto NO FILL ma compare “fill” in altre frasi: controlla.");
+    }
+
+    // Troppa roba / ripetizioni
+    if(final.length > 1200){
+      issues.push("Molto lungo: di solito Suno risponde meglio con prompt più asciutti e ripetibili.");
+    }
+
+    return issues;
+  }
+
+  ["p_tempo","p_rhythm","p_sound","p_vox","p_rules"].forEach(id=>{
+    $(id).addEventListener("input", buildPromptFinal);
+  });
+  $("p_limitSel").addEventListener("change", buildPromptFinal);
+
+  $("btnCopyPrompt").onclick = async ()=>{
+    try{
+      await navigator.clipboard.writeText($("p_final").value);
+      toast("Prompt copiato.");
+    }catch{
+      toast("Copia non disponibile: seleziona e copia manualmente.");
+    }
+  };
+
+  // -----------------------
+  // Utilities
+  // -----------------------
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 500);
+  }
+
+  function escapeHtml(str){
+    return (str||"").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m]));
+  }
+
+  function toast(msg){
+    const n = document.createElement("div");
+    n.textContent = msg;
+    n.style.position="fixed";
+    n.style.left="50%";
+    n.style.bottom="18px";
+    n.style.transform="translateX(-50%)";
+    n.style.background="rgba(18,20,27,.95)";
+    n.style.border="1px solid var(--line)";
+    n.style.padding="10px 12px";
+    n.style.borderRadius="999px";
+    n.style.color="var(--text)";
+    n.style.zIndex="9999";
+    n.style.boxShadow="0 10px 40px rgba(0,0,0,.45)";
+    document.body.appendChild(n);
+    setTimeout(()=>{ n.style.opacity="0"; n.style.transition="opacity .25s"; }, 1200);
+    setTimeout(()=>n.remove(), 1500);
+  }
+
+  // -----------------------
+  // Init
+  // -----------------------
+  function init(){
+    currentId = db.selected || db.tracks[0]?.id || null;
+    renderList();
+    renderEditor();
+    if(currentId){
+      // show cockpit by default
+      document.querySelector(".tab[data-tab='cockpit']").click();
+    }
+  }
+  init();
+</script>
+</body>
+</html>
