@@ -245,11 +245,10 @@ Seleziona un backup e ripristina brani e dati.
 ## Struttura repo
 
 ReleasePilot/
-├─ index.htm
+├─ index.html
 ├─ README.md
 └─ (opzionale) assets/
 
-> Se pubblichi su GitHub Pages, puoi rinominare `index.htm` in `index.html`.
 
 ---
 
