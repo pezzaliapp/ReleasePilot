@@ -98,7 +98,7 @@
         <button class="tab active" data-tab="cockpit">Cockpit</button>
         <button class="tab" data-tab="checklist">Checklist</button>
         <button class="tab" data-tab="lyrics">Lyrics EN/IT</button>
-        <button class="tab" data-tab="suno">Suno Prompt</button>
+        <button class="tab" data-tab="ai-prompt">AI Music Prompt ⭐</button>
         <button class="tab" data-tab="links">Link & Note</button>
       </div>
 
@@ -204,8 +204,8 @@
         </div>
       </section>
 
-      <!-- SUNO -->
-      <section id="tab-suno" class="card hide">
+      <!-- AI Music -->
+      <section id="tab-ai-prompt" class="card hide">
         <div class="muted small">Prompt builder a blocchi + controllo coerenza (anti-spreco crediti).</div>
         <div class="sep"></div>
 
@@ -449,7 +449,7 @@
     // Checklist
     renderChecklist(t);
 
-    // Suno prompt blocks
+    // AI Music Prompt prompt blocks
     $("p_tempo").value = t.prompt?.tempo||"";
     $("p_rhythm").value = t.prompt?.rhythm||"";
     $("p_sound").value = t.prompt?.sound||"";
@@ -699,7 +699,7 @@
   }
 
   // -----------------------
-  // Suno Prompt Builder
+  // AI Music Prompt Builder
   // -----------------------
   function buildPromptFinal(){
     const t = getTrack(currentId); if(!t) return;
@@ -774,7 +774,7 @@
 
     // Troppa roba / ripetizioni
     if(final.length > 1200){
-      issues.push("Molto lungo: di solito Suno risponde meglio con prompt più asciutti e ripetibili.");
+      issues.push("Molto lungo: di solito AI Music risponde meglio con prompt più asciutti e ripetibili.");
     }
 
     return issues;
