@@ -4,6 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
  <title>ReleasePilot — PezzaliAPP (Offline)</title>
+    <!-- PWA -->
+  <link rel="manifest" href="/ReleasePilot/manifest.webmanifest">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" type="image/png" sizes="192x192" href="/ReleasePilot/ReleasePilot-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/ReleasePilot/ReleasePilot-512.png">
+  <link rel="apple-touch-icon" href="/ReleasePilot/ReleasePilot-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="ReleasePilot">
   <style>
     :root { --bg:#0b0c10; --panel:#12141b; --panel2:#0f1117; --text:#e7e9ee; --muted:#9aa3b2; --line:#222635; --accent:#6ee7ff; }
     * { box-sizing:border-box; }
@@ -847,6 +856,13 @@
     }
   }
   init();
+</script>
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/ReleasePilot/sw.js').catch(console.error);
+    });
+  }
 </script>
 </body>
 </html>
